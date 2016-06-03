@@ -78,6 +78,13 @@ audio:not([controls]) {
 template {
   display: none;
 }
+/*
+LOGO
+*/
+
+.logoimage {
+  height: 100px;
+}
 
 /* Links
    ========================================================================== */
