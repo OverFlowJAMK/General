@@ -27,7 +27,7 @@ class SwitchLogic(app_manager.RyuApp):
 	parser = datapath.ofproto_parser
 	match = parser.OFPMatch()
 	actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
-	print('Added default flow to switch')
+	#print('Added default flow to switch')
 	self.add_flow(datapath, 0, 0, match, actions)
 
     def add_flow(self, datapath, timeout, priority, match, actions, buffer_id=None):
@@ -39,7 +39,7 @@ class SwitchLogic(app_manager.RyuApp):
             mod = parser.OFPFlowMod(datapath=datapath, hard_timeout=timeout, match=match, priority=priority, buffer_id=buffer_id, instructions=inst)
 	else:
             mod = parser.OFPFlowMod(datapath=datapath, hard_timeout=timeout, priority=priority, match=match, instructions = inst)
-	print('Added flow to switch')
+	#print('Added flow to switch')
         datapath.send_msg(mod)
 
     # Event listener for packets
@@ -68,17 +68,23 @@ class SwitchLogic(app_manager.RyuApp):
 	else:
 	    out_port = ofproto.OFPP_FLOOD
 	
-	# Get list of allowed devices from api
-	devices = []
-	response = requests.get('http://127.0.0.1:5000/network/api/v0.1/devices')
-	jsondata = response.json()
-	for element in jsondata['devices']:
-	    devices.append(element['device'])
+	# If packet is going to switch 1(dpid=1) and in_port=1
+	# check if device is allowed from api
+	if dpid == 1 and in_port == 1:
 
-	# If packet is going to switch 1(dpid=1) and in_port=1 and source mac-address
-	# is not in allowed list then drop packet
-	if dpid == 1 and in_port == 1 and src not in devices:
-	    return
+	    # Get list of allowed devices from api
+	    devices = []
+	    response = requests.get('http://127.0.0.1:5000/network/api/v0.1/devices')
+	    jsondata = response.json()
+	    for element in jsondata['devices']:
+	        devices.append(element['device'])
+
+	    # If source mac-address is not in allowed list then drop packet
+	    if src not in devices:
+		out_port = None
+		actions = [parser.OFPActionOutput(0)]
+	    else:
+		actions = [parser.OFPActionOutput(out_port)]
 	else:
             actions = [parser.OFPActionOutput(out_port)]
 	
