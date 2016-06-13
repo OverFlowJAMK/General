@@ -1,3 +1,10 @@
+########################
+#
+# Author: Sami Autio
+# Date: 13.6.2016
+#
+########################
+
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import MAIN_DISPATCHER
@@ -86,7 +93,7 @@ class SwitchLogic(app_manager.RyuApp):
 	    else:
 		actions = [parser.OFPActionOutput(out_port)]
 	else:
-            actions = [parser.OFPActionOutput(out_port)]
+	    actions = [parser.OFPActionOutput(out_port)]
 	
 	# Install a flow to avoid packet_in next time
 	if out_port != ofproto.OFPP_FLOOD:

@@ -1,6 +1,13 @@
+#########################
+#
+# Author: Sami Autio
+# Date: 13.6.2016
+#
+#########################
+
 from flask import Flask, jsonify, abort, make_response
-from flask.ext.restful import Api, Resource, reqparse, fields, marshal
-from flask.ext.httpauth import HTTPBasicAuth
+from flask_restful import Api, Resource, reqparse, fields, marshal
+from flask_httpauth import HTTPBasicAuth
 
 app = Flask(__name__, static_url_path="")
 api = Api(app)
@@ -53,7 +60,7 @@ class Device(Resource):
 	    if element['device'] == device:
 		return {'result': [{'success':'false', 'details':'device already allowed'}]}
 	devices.append({'device': device})	
-	return {'success':'true'}
+	return {'result': [{'success':'true'}]}
 
     def delete(self):
 	args = self.reqparse.parse_args()
@@ -66,13 +73,13 @@ class Device(Resource):
 	    if element['device'] == device:
 		# Remove device from allowed list
 		devices.remove({'device': device})
-		return {'success':'true'}
+		return {'result': [{'success':'true'}]}
 	return {'result': [{'success':'false', 'details':'no such device in allowed list'}]}
 
 api.add_resource(DeviceList, '/network/api/v0.1/devices', endpoint='devices')
 api.add_resource(Device, '/network/api/v0.1/device', endpoint='device')
 
 if __name__ == '__main__':
+    #app.run(host='192.168.142.50')
     app.run(debug=True)
-
 
