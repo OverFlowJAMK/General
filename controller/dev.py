@@ -19,39 +19,48 @@ import json
 import requests
 
 class SwitchLogic(app_manager.RyuApp):
+    # Define that we use openflow 1.3 version
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION] 
       
     def __init__(self, *args, **kwargs):
 	super(SwitchLogic, self).__init__(*args, **kwargs)
+	# init mac_to_port variable for "learning switch" operations
 	self.mac_to_port = {}
 
+    # Event listener for configuring switches
+    # (Triggers when switch connects to network)
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
 	
 	# Create default flow for switches which sends packets to controller
+	# (Without this default flow packets will never be sent to controller)
 	datapath = ev.msg.datapath
 	ofproto = datapath.ofproto
 	parser = datapath.ofproto_parser
 	match = parser.OFPMatch()
 	actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER, ofproto.OFPCML_NO_BUFFER)]
-	#print('Added default flow to switch')
+
 	self.add_flow(datapath, 0, 0, match, actions)
 
+    # Basic method for adding flows to switches
     def add_flow(self, datapath, timeout, priority, match, actions, buffer_id=None):
+
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
-
 	inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
 	if buffer_id:
             mod = parser.OFPFlowMod(datapath=datapath, hard_timeout=timeout, match=match, priority=priority, buffer_id=buffer_id, instructions=inst)
 	else:
             mod = parser.OFPFlowMod(datapath=datapath, hard_timeout=timeout, priority=priority, match=match, instructions = inst)
-	#print('Added flow to switch')
+
         datapath.send_msg(mod)
 
     # Event listener for packets
+    # (Triggers when switch gets a packet which does not
+    # hit any current flows in switch and there by is sent by default flow to controller)
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def packet_in_handler(self, ev):
+
         msg = ev.msg
 	datapath = msg.datapath
         ofproto = datapath.ofproto
