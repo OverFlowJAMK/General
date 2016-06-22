@@ -1,0 +1,6 @@
+{
+  "name": "OverFlow",
+  "tagline": "Providing SDN to Challenge Factory",
+  "body": "## About our company\r\n\r\nWe are going to build a Software Defined Network to Challenge Factory 2016, which is a summer project organized by Jyväskylä University of Applied Sciences. The company has three employees. The network is planned to connect three classrooms in school. Those three classrooms are a project room of a company named KUMOS, a general working room and a room for SDN- operator. \r\n\r\n##Members\r\n\r\n| Name       | Title           | GitHub  | Linkedin  |\r\n| ------------- |:-------------:|:-----|:------|\r\n| Niko Hakkarainen      | Junior SDN developer| https://github.com/NikoHakkarainen | https://fi.linkedin.com/in/niko-hakkarainen-544b86120 |\r\n| Sami Autio      | Junior SDN developer      | https://github.com/Sakaauti | https://www.linkedin.com/in/sami-autio   |\r\n| Sergey Martikainen | Junior SDN developer      | https://github.com/Shady-Dev | https://www.linkedin.com/in/sergey-martikainen-b8098510a    |\r\n",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
