@@ -7,10 +7,15 @@ import time
 from backports import configparser
 Config = configparser.ConfigParser()
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+from jwcrypto.common import json_decode, json_encode
+from jwcrypto import jwk
+from jwcrypto import jws
+from jwcrypto import jwe
+from jwcrypto import jwt
 
 def RSA_public(key):
-    P = dict(json.loads(key.export_public()))
-    return JWK(**P)
+    P = dict(json.loads(key.decode("UTF-8")))
+    return jwk.JWK(**P)
 
 def ErrorHandling(filu,t):
     ip = input('anna ip:')
@@ -55,7 +60,8 @@ def send_UDP(filu,t):
 
         IP = Config.get('UDP','udp_ip')
         PORT = int(Config.get('UDP','udp_port'))
-        PAYLOAD = json.dumps({"username": Config.get('KaMU','username'), "password": Config.get('KaMU','password')})
+        CHECK = "I am Client"
+        PAYLOAD = "mac=00-00-00-00-00-01"#json.dumps({"username": Config.get('KaMU','username'), "password": Config.get('KaMU','password')})
         fp.close()
         
         print ("ip:", IP)
@@ -81,23 +87,49 @@ def send_UDP(filu,t):
             print('*** could not open socket')
             time.sleep(t)
             send_UDP(filu,t)
-        s.sendall(PAYLOAD.encode())
-        print('*** send inofrmation')
+        s.sendall(CHECK.encode("utf-8"))
+        print('*** send check')
         try:
             s.settimeout(10)
             key = s.recv(1024)
             s.settimeout(None)
-            s.close()
-            break
         except socket.error as msg:
             print('*** timeout')
             time.sleep(t)
             continue
-        
         public_key = RSA_public(key)
+
+        claims = dict(exp=PAYLOAD)
+        header = dict(alg="RSA-OAEP-256", enc="A128GCM")
+        T = jwt.JWT(header, claims)
+        T.make_encrypted_token(public_key)
+
+        encrypted_signed_token = T.serialize(compact=True)
         
+        print("*** engrypted signed token:",encrypted_signed_token)
+        
+        s.sendall(encrypted_signed_token.encode())
+        print('*** send inoformation')
+
+        try:
+            s.settimeout(10)
+            data = s.recv(1024).decode("utf-8")
+            s.settimeout(None)
+            print('Received', data)
+            if data=="ok, I am closing":
+                s.sendall("ok".encode("utf-8"))
+                print("*** send reply")
+                s.close()
+                break
+            else:
+                print('*** timeout')
+                time.sleep(t)
+                continue
+        except socket.error as msg:
+            print('*** timeout')
+            time.sleep(t)
+            continue
     
-    print('Received', repr(data))
     sys.exit(1)
 
 t = 30
