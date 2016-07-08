@@ -4,6 +4,7 @@ import codecs
 import sys
 import socket
 import time
+import _thread as thread
 from backports import configparser
 Config = configparser.ConfigParser()
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -73,7 +74,7 @@ def send_UDP(filu,t,IP,PORT,CHECK):
         s.sendall(CHECK.encode("utf-8"))
         print('*** send check')
     t = 0
-    while True:
+    while t<=10:
         PAYLOAD = Config.get('KaMU','password')#näyttää tarkistavan tämän vain jos koko aliohjelma alkaa alusta
         if t>=10:
             PAYLOAD = "00-00-00-00-00-00"
@@ -131,4 +132,8 @@ PORT = int(Config.get('UDP','udp_port'))
 CHECK = Config.get('KaMU','username')
 #PAYLOAD = Config.get('KaMU','password')
 fp.close()
-send_UDP(filu,t,IP,PORT,CHECK)
+
+while True:
+    thread.start_new_thread(send_UDP,(filu,t,IP,PORT,CHECK,))
+    time.sleep(20)
+

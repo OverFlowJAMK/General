@@ -107,15 +107,6 @@ def send_UDP(filu,t,IP,PORT,CHECK):
         s.sendall(encrypted_signed_token.encode("utf-8"))
         print('*** send inoformation')
 
-        if PORT == int(Config.get('UDP','udp_port')):
-            NEW_PORT = s.recv(1024).decode("utf-8")
-            if PORT == b'':
-                send_UDP(filu,t,IP,PORT,CHECK)
-            s.close()
-            send_UDP(filu,t,IP,NEW_PORT,CHECK)
-        time.sleep(5)
-        t = t+1
-
 t = 5
 filu = 'daemon.ini'
 fp = open(filu, 'r+')
@@ -125,7 +116,6 @@ try:
 except:
     print("*** File is missing sections and information.")
     ErrorHandling(filu,t)
-print("Tarkistetaan kansio")
 IP = Config.get('UDP','udp_ip')
 PORT = int(Config.get('UDP','udp_port'))
 CHECK = Config.get('KaMU','username')
