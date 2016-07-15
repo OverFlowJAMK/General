@@ -12,123 +12,145 @@ from jwcrypto import jwk
 from jwcrypto import jws
 from jwcrypto import jwe
 from jwcrypto import jwt
-
-def RSA_public(key):
-    P = dict(json.loads(key.decode("UTF-8")))
-    return jwk.JWK(**P)
-
-def ErrorHandling(filu,t,IP,PORT,CHECK):
-    ip = input('anna ip:')
-    port = input('anna port:')
-    user = input('anna user:')
-    passw = input('anna passw:')
     
+
+def ErrorHandling(filu,section,a_info,b_info):
+    print(filu,section,a_info,b_info)
     cfgfile = open(filu,'w')
-    while True:
-        try:
-            Config.add_section('UDP')
-            Config.add_section('KaMU')
-            Config.add_section('Check')
-            print("*** Created.")
-        except socket.error as msg:
-            print(msg)
-            continue
-        break
-    Config.set('UDP','UDP_IP',ip)
-    Config.set('UDP','UDP_PORT', port)
-    Config.set('KaMU','username',user)
-    Config.set('KaMU','password',passw)
-    Config.set('Check','sections', '${UDP,udp_ip} ${UDP,udp_port} ${KaMU,username} ${KaMU,password}')
-    
+    try:
+        Config.add_section(section)
+        print("*** Created section")
+    except:
+        print("*** Section already exists")
+        
+    if filu == 'ServerAddress.ini':
+        a = input('server ip:')
+        b = input('server port:')
+    else:
+        a = input('mac address:')
+        b = str(time.time())
+    Config.set(section,a_info,a)
+    Config.set(section,b_info,b)
     Config.write(cfgfile)
     cfgfile.close()
-    
-    print("*** Created information.")
-    send_UDP(filu,t)
+    print("*** New",filu,"created")
         
 
-def send_UDP(filu,t,IP,PORT,CHECK):
-    print("*** try connection")
-    s = None
-    for res in socket.getaddrinfo(IP, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
-        af, socktype, proto, canonname, sa = res
-        try:
-            s = socket.socket(af, socktype, proto)
-        except socket.error as msg:
-            s = None
-            continue
-        try:
-            s.connect(sa)
-        except socket.error as msg:
-            s.close()
-            s = None
-            continue
-        break
-    if s is None:
-        print('*** could not open socket')
-        time.sleep(t)
-        send_UDP(filu,t,IP,PORT,CHECK)
+def send_UDP(afilu,bfilu,t,IP,PORT,PAYLOAD):
+    try:
+        print("-"*60)
+        s = None
+        for res in socket.getaddrinfo(IP, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            try:
+                s = socket.socket(af, socktype, proto)
+            except socket.error as msg:
+                s = None
+                continue
+            try:
+                print("*** try connection",sa)
+                s.connect(sa)
+            except socket.error as msg:
+                s.close()
+                s = None
+                continue
+            break
+        if s is None:
+            print('*** could not open socket')
+            send_UDP(afilu,bfilu,t,IP,PORT,PAYLOAD)    
+        #Lähetetään check        
+        if PORT == int(Config.get('address','port')):
+            CHECK = "I am Client"
+            s.sendall(CHECK.encode("utf-8"))
+            print('*** send check')
             
-    if PORT == int(Config.get('UDP','udp_port')):
-        s.sendall(CHECK.encode("utf-8"))
-        print('*** send check')
-    t = 0
-    while True:
-        PAYLOAD = Config.get('KaMU','password')#näyttää tarkistavan tämän vain jos koko aliohjelma alkaa alusta
-        if t>=10:
-            PAYLOAD = "00-00-00-00-00-00"
-        print ("ip:", IP)
-        print ("port:", PORT)
-        print (PAYLOAD)
+        while True:
+            bfp = open(bfilu, 'r')
+            Config.readfp(bfp) 
+            PAYLOAD = Config.get('KaMU','username')#näyttää tarkistavan tämän vain jos koko ohjelma alkaa alusta
+            bfp.close()
+            print ("ip:", IP)
+            print ("port:", PORT)
+            print (PAYLOAD)
+                
+            try:
+                s.settimeout(t)
+                key = s.recv(1024)
+                print(key)
+                s.settimeout(None)
+                if key == b'Good try <3':
+                    afp = open(afilu, 'r')
+                    Config.readfp(afp)
+                    PORT = int(Config.get('address','port'))
+                    afp.close()
+                    send_UDP(afilu,bfilu,t,IP,PORT,PAYLOAD)
+            except:
+                print('*** timeout')
+                time.sleep(t)
+                continue
             
-        try:
-            s.settimeout(10)
-            key = s.recv(1024)
-            print(key)
-            s.settimeout(None)
-            if key == b'Good try <3':
-                PORT = int(Config.get('UDP','udp_port'))
-                send_UDP(filu,t,IP,PORT,CHECK)
-        except socket.error as msg:
-            print('*** timeout')
+            #Salataan ja lähetetään tieto julkisella avaimella
+            P = dict(json.loads(key.decode("UTF-8")))
+            public_key = jwk.JWK(**P)
+            claims = dict(exp=PAYLOAD)
+            header = dict(alg="RSA-OAEP-256", enc="A128GCM")
+            T = jwt.JWT(header, claims)
+            T.make_encrypted_token(public_key)
+            encrypted_signed_token = T.serialize(compact=True)
+            print("*** engrypted signed token:",encrypted_signed_token)
+            s.sendall(encrypted_signed_token.encode("utf-8"))
+            print('*** send inoformation')
+
+            afp = open(afilu, 'r')
+            Config.readfp(afp)
+            old_PORT = int(Config.get('address','port'))
+            afp.close()
+
+            if PORT == old_PORT:
+                NEW_PORT = s.recv(1024).decode("utf-8")
+                if PORT == b'':
+                    send_UDP(afilu,bfilu,t,IP,PORT,PAYLOAD)
+                else:
+                    s.close()
+                    send_UDP(afilu,bfilu,t,IP,NEW_PORT,PAYLOAD)
             time.sleep(t)
-            continue
-        public_key = RSA_public(key)
-
-        claims = dict(exp=PAYLOAD)
-        header = dict(alg="RSA-OAEP-256", enc="A128GCM")
-        T = jwt.JWT(header, claims)
-        T.make_encrypted_token(public_key)
-
-        encrypted_signed_token = T.serialize(compact=True)
-        
-        print("*** engrypted signed token:",encrypted_signed_token)
-        
-        s.sendall(encrypted_signed_token.encode("utf-8"))
-        print('*** send inoformation')
-
-        if PORT == int(Config.get('UDP','udp_port')):
-            NEW_PORT = s.recv(1024).decode("utf-8")
-            if PORT == b'':
-                send_UDP(filu,t,IP,PORT,CHECK)
-            s.close()
-            send_UDP(filu,t,IP,NEW_PORT,CHECK)
-        time.sleep(5)
-        t = t+1
+    except:
+        afp = open(afilu, 'r')
+        Config.readfp(afp)
+        old_PORT = int(Config.get('address','port'))
+        afp.close()
+        print("New start")
+        time.sleep(t)
+        send_UDP(afilu,bfilu,t,IP,old_PORT,PAYLOAD)
 
 t = 5
-filu = 'daemon.ini'
-fp = open(filu, 'r+')
-Config.readfp(fp)
-try:
-    Config.get('Check', 'sections')
-except:
-    print("*** File is missing sections and information.")
-    ErrorHandling(filu,t)
-print("Tarkistetaan kansio")
-IP = Config.get('UDP','udp_ip')
-PORT = int(Config.get('UDP','udp_port'))
-CHECK = Config.get('KaMU','username')
-#PAYLOAD = Config.get('KaMU','password')
-fp.close()
-send_UDP(filu,t,IP,PORT,CHECK)
+afilu = 'ServerAddress.ini'
+bfilu = 'ClientDaemon.ini'
+
+while True:
+    print("*** Opening",afilu)
+    try:
+        afp = open(afilu, 'r')
+        Config.readfp(afp)
+        IP = Config.get("address","ip")
+        PORT = int(Config.get("address","port"))
+        afp.close()
+        break
+    except:
+        print("*** File is missing sections and information.")
+        ErrorHandling(afilu,"address","ip","port")
+           
+while True:
+    print("*** Opening",bfilu)   
+    try:
+        bfp = open(bfilu, 'r')
+        Config.readfp(bfp) 
+        PAYLOAD = Config.get("KaMU","username")
+        bfp.close()
+        break
+    except:
+        print("*** File is missing sections and information.")
+        bfp.close()
+        ErrorHandling(bfilu,"KaMU","username","time")
+
+send_UDP(afilu,bfilu,t,IP,PORT,PAYLOAD)
