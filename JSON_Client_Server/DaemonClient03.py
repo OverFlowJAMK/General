@@ -67,7 +67,7 @@ def send_UDP(afilu,bfilu,t,IP,PORT,PAYLOAD):
         while True:
             bfp = open(bfilu, 'r')
             Config.readfp(bfp) 
-            PAYLOAD = Config.get('KaMU','username')#näyttää tarkistavan tämän vain jos koko ohjelma alkaa alusta
+            PAYLOAD = Config.get('KaMU','username')
             bfp.close()
             print ("ip:", IP)
             print ("port:", PORT)
