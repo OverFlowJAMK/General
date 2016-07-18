@@ -198,8 +198,7 @@ while True:
             
             
             #No jos se client on listalla niin se SDN-kontrolleri vaan lisää sen sensorin siihen samaan vlaniin
-            #missä se kaa ja baasbox on. Se controllerin toteutus on mulla ihan vähän vielä vaiheessa,
-            #mutta saan sen varmaan sellaseksi, että sitä vois alkaa testaileen niin vielä tällä viikolla
+            #missä se kaa ja baasbox on.
 
             
             
