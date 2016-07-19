@@ -172,9 +172,7 @@ while True:
             jData = json.loads(myResponse.content.decode("utf-8"))
             print("The response contains {0} properties".format(len(jData)))
             
-            
             # Konrollerille yhteys
-
             
             
             #Haetaan "listalta"
