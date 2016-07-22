@@ -81,110 +81,116 @@ def Listen_Client(url,data,tport,q,header):
         q.put(tport)
         print("Thread *** Forced end")
 
-
-Config = configparser.ConfigParser() 
-q=queue.Queue()
-filu = 'serveraddress.ini'
-HOST = '0.0.0.0'    #change to None if wanted listen from IPv6 address
-try:
-    fp = open(filu, 'r+')
-    Config.readfp(fp)
-    url = Config.get('REST','url')
-    header = Config.get('REST','header')
-    tport = int(Config.get('DAEMON','port'))
-    PORT = int(Config.get('DAEMON','port'))
-    fp.close()
-except:
-    filu = input('anna kansion nimi:')
-    url = input('anna url:')
-    header = input('anna header:')
-    port = input('anna port:')
-    cfgfile = open(filu,'w')
+def ServerMain():
     try:
-        Config.add_section('REST')
-        Config.add_section('DAEMON')
-        print("*** Created sections")
-    except:
-        print('*** sections already exists')
-    Config.set('REST','url',url)
-    Config.set('REST','header', header)
-    Config.set('DAEMON','port',port)
-    Config.write(cfgfile)
-    cfgfile.close()
-    tport = int(Config.get('DAEMON','port'))
-    url = Config.get('REST','url')
-    header =  Config.get('REST','header')
-    PORT = int(Config.get('DAEMON','port'))
-    print("*** Created information.")
-header = ast.literal_eval(header)
+        Config = configparser.ConfigParser() 
+        q=queue.Queue()
+        filu = 'serveraddress.ini'
+        HOST = '0.0.0.0'    #change to None if wanted listen from IPv6 address
+        try:
+            fp = open(filu, 'r+')
+            Config.readfp(fp)
+            url = Config.get('REST','url')
+            header = Config.get('REST','header')
+            tport = int(Config.get('DAEMON','port'))
+            PORT = int(Config.get('DAEMON','port'))
+            fp.close()
+        except:
+            filu = input('anna kansion nimi:')
+            url = input('anna url:')
+            header = input('anna header:')
+            port = input('anna port:')
+            cfgfile = open(filu,'w')
+            try:
+                Config.add_section('REST')
+                Config.add_section('DAEMON')
+                print("*** Created sections")
+            except:
+                print('*** sections already exists')
+            Config.set('REST','url',url)
+            Config.set('REST','header', header)
+            Config.set('DAEMON','port',port)
+            Config.write(cfgfile)
+            cfgfile.close()
+            tport = int(Config.get('DAEMON','port'))
+            url = Config.get('REST','url')
+            header =  Config.get('REST','header')
+            PORT = int(Config.get('DAEMON','port'))
+            print("*** Created information.")
+        header = ast.literal_eval(header)
 
-while True:
-    print("*** Main ***")
-    #print("*" * 60)
-    conn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        conn.bind((HOST, PORT))
-    except:
-        print("Ei onnistunut")
-    info = conn.recvfrom(1024)
-    print(info)
-    data = info[0].decode("utf-8")
-    print (data)
-    addr = info[1]
-    print (addr)
-    
-    #datan tarkistus ja säikeen aloitus
-    if data=="I am Client":
-        #print("Main *** Right start message")
-
-        #lähetetään julkinen avain
-        key = JWK(generate="RSA",public_exponent=29,size=1000)
-        public_key = key.export_public()
-        conn.sendto(public_key.encode("utf-8"),addr)
-
-        #otetaan viesti vastaan ja avataan
-        encrypted_signed_token = conn.recv(1024).decode("utf-8")
-        #print(encrypted_signed_token)
-
-        E = JWE()
-        E.deserialize(encrypted_signed_token, key)
-        raw_payload = E.payload
-        #print("*** raw payload:",raw_payload)
-        string = raw_payload.decode("utf-8")
-        #print("*** received str:", string)
-        Payload = json.loads(string)
-        #print("*** JSON:",Payload)
-        #print("*** received payload:", Payload['exp'])
-
-        #käydään REST app kysymässä Kumokselta
-        mac = str(Payload['exp'])
-        myResponse = requests.get(url + mac,header)
-        #print(url + mac,header)
-        #print("REST:", myResponse.status_code)
-        if(myResponse.ok):
-            print("main *** Found!")
-            jData = json.loads(myResponse.content.decode("utf-8"))
-            #print("The response contains {0} properties".format(len(jData)))
+        while True:
+            print("*** Main ***")
+            #print("*" * 60)
+            conn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                conn.bind((HOST, PORT))
+            except:
+                print("Ei onnistunut")
+            info = conn.recvfrom(1024)
+            print(info)
+            data = info[0].decode("utf-8")
+            print (data)
+            addr = info[1]
+            print (addr)
             
-            # Konrollerille yhteys
-            
-            
-            #Haetaan "listalta"
-            if not q.empty():
-                tport = q.get()
-                conn.sendto(tport.encode("utf-8"),addr)
+            #datan tarkistus ja säikeen aloitus
+            if data=="I am Client":
+                #print("Main *** Right start message")
+
+                #lähetetään julkinen avain
+                key = JWK(generate="RSA",public_exponent=29,size=1000)
+                public_key = key.export_public()
+                conn.sendto(public_key.encode("utf-8"),addr)
+
+                #otetaan viesti vastaan ja avataan
+                encrypted_signed_token = conn.recv(1024).decode("utf-8")
+                #print(encrypted_signed_token)
+
+                E = JWE()
+                E.deserialize(encrypted_signed_token, key)
+                raw_payload = E.payload
+                #print("*** raw payload:",raw_payload)
+                string = raw_payload.decode("utf-8")
+                #print("*** received str:", string)
+                Payload = json.loads(string)
+                #print("*** JSON:",Payload)
+                #print("*** received payload:", Payload['exp'])
+
+                #käydään REST app kysymässä Kumokselta
+                mac = str(Payload['exp'])
+                myResponse = requests.get(url + mac,header)
+                #print(url + mac,header)
+                #print("REST:", myResponse.status_code)
+                if(myResponse.ok):
+                    print("main *** Found!")
+                    jData = json.loads(myResponse.content.decode("utf-8"))
+                    #print("The response contains {0} properties".format(len(jData)))
+                    
+                    # Konrollerille yhteys
+                    
+                    
+                    #Haetaan "listalta"
+                    if not q.empty():
+                        tport = q.get()
+                        conn.sendto(tport.encode("utf-8"),addr)
+                    else:
+                        tport = str(int(tport)+1)
+                        conn.sendto(tport.encode("utf-8"),addr)
+
+                    #Aloitetaan stringissä uusi yhteys
+                    thread.start_new_thread(Listen_Client,(url,data,tport,q,header,))
+                else:
+                    print("main *** Not found")
+                    answer="Good try <3"
+                    conn.sendto(answer.encode("utf-8"),addr)
             else:
-                tport = str(int(tport)+1)
-                conn.sendto(tport.encode("utf-8"),addr)
-
-            #Aloitetaan stringissä uusi yhteys
-            thread.start_new_thread(Listen_Client,(url,data,tport,q,header,))
-        else:
-            print("main *** Not found")
-            answer="Good try <3"
-            conn.sendto(answer.encode("utf-8"),addr)
-    else:
+                conn.close()
+                print("*" * 60)
         conn.close()
         print("*" * 60)
-conn.close()
-print("*" * 60)
+    except:
+        print("Main *** frong message. Start again")
+        ServerMain()
+        
+ServerMain()
