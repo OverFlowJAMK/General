@@ -75,28 +75,28 @@ def Listen_Client(url,data,tport,q,header):
                 #SDN irrottaa kyseisen laitteen verkosta
                 break
             conn.close()
+        #conn.close()
         print("Thread *** end")
         q.put(tport)
     except:
+        #conn.close()
         q.put(tport)
         print("Thread *** Forced end")
 
-def ServerMain():
+def ServerMain(q,tport):
     try:
-        Config = configparser.ConfigParser() 
-        q=queue.Queue()
-        filu = 'serveraddress.ini'
+        filu = 'serverdaemon.ini'
         HOST = '0.0.0.0'    #change to None if wanted listen from IPv6 address
         try:
             fp = open(filu, 'r+')
             Config.readfp(fp)
             url = Config.get('REST','url')
             header = Config.get('REST','header')
-            tport = int(Config.get('DAEMON','port'))
+            if tport==0:
+                tport = int(Config.get('DAEMON','port'))
             PORT = int(Config.get('DAEMON','port'))
             fp.close()
         except:
-            filu = input('anna kansion nimi:')
             url = input('anna url:')
             header = input('anna header:')
             port = input('anna port:')
@@ -129,11 +129,11 @@ def ServerMain():
                 print("Main *** Ei onnistunut")
                 ServerMain()
             info = conn.recvfrom(1024)
-            print(info)
+            #print(info)
             data = info[0].decode("utf-8")
-            print (data)
+            #print (data)
             addr = info[1]
-            print (addr)
+            #print (addr)
             
             #datan tarkistus ja säikeen aloitus
             if data=="I am Client":
@@ -182,7 +182,7 @@ def ServerMain():
                     #Aloitetaan stringissä uusi yhteys
                     thread.start_new_thread(Listen_Client,(url,data,tport,q,header,))
                 else:
-                    print("main *** Not found")
+                    print("Main *** Not found")
                     answer="Good try <3"
                     conn.sendto(answer.encode("utf-8"),addr)
             else:
@@ -191,7 +191,11 @@ def ServerMain():
         conn.close()
         print("*" * 60)
     except:
-        print("Main *** frong message. Start again")
-        ServerMain()
-        
-ServerMain()
+        conn.close()
+        print("Main *** Frong message. Start again")
+        ServerMain(q,tport)
+
+Config = configparser.ConfigParser() 
+q=queue.Queue()
+tport = 0
+ServerMain(q,tport)
