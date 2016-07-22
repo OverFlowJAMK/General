@@ -126,7 +126,8 @@ def ServerMain():
             try:
                 conn.bind((HOST, PORT))
             except:
-                print("Ei onnistunut")
+                print("Main *** Ei onnistunut")
+                ServerMain()
             info = conn.recvfrom(1024)
             print(info)
             data = info[0].decode("utf-8")
