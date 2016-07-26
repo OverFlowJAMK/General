@@ -28,6 +28,7 @@ def Listen_Client(url,data,tport,q,header):
                     af, socktype, proto, canonname, sa = res
                     try:
                         s = socket.socket(af, socktype, proto)
+                        s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
                     except socket.error as msg:
                         s = None
                         continue
@@ -161,7 +162,7 @@ def mainServer(q):
         print("*" * 60)
         print('Main *** Connected by', addr)
         data = conn.recv(1024).decode("utf-8")
-        print(data)
+        #print(data)
         
         #datan tarkistus ja säikeen aloitus
         if data=="I am Client":
@@ -174,7 +175,7 @@ def mainServer(q):
 
             #otetaan viesti vastaan ja avataan
             encrypted_signed_token = conn.recv(1024).decode("utf-8")
-            print(encrypted_signed_token)
+            #print(encrypted_signed_token)
 
             E = JWE()
             E.deserialize(encrypted_signed_token, key)
@@ -216,7 +217,6 @@ def mainServer(q):
                         #conn.shutdown(socket.SHUT_RDWR)
                         conn.close()
                         thread.start_new_thread(Listen_Client,(url,data,tport,q,header,))
-                        time.sleep(5)
                     else:
                         print("Not found")
                         answer="Good try <3"
