@@ -66,7 +66,7 @@ def Listen_Client(url,data,tport,q,header):
                     string = raw_payload.decode("utf-8")
                     Payload = json.loads(string)
                     #print("Thread *** received payload:", Payload['exp'])
-                    while:
+                    while True:
                         try:
                             #käydään REST app kysymässä Kumokselta
                             mac = str(Payload['exp'])
@@ -186,7 +186,7 @@ def mainServer(q):
             Payload = json.loads(string)
             #print("*** JSON:",Payload)
             #print("*** received payload:", Payload['exp'])
-            while:
+            while True:
                 try:
                     #käydään kysymässä onko listoilla
                     mac = str(Payload['exp'])
