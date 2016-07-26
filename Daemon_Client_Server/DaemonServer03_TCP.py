@@ -139,6 +139,7 @@ def mainServer(q):
             af, socktype, proto, canonname, sa = res
             try:
                 s = socket.socket(af, socktype, proto)
+                s.setsockopt(SOL_SOCKET,SO_REUSEADDR,1)
             except socket.error as msg:
                 s = None
                 continue
@@ -195,9 +196,12 @@ def mainServer(q):
                 jData = json.loads(myResponse.content.decode("utf-8"))
                 print("The response contains {0} properties".format(len(jData)))
                 
-                
-                #Kontrollerille viestiä
-                
+                #Kontrollerille viestiä, id configuroitavissa
+                #{
+                #ip: string,
+                #valid: bool
+                #}
+                #POST /iot-service/:id
                 
                 #Haetaan "listalta"
                 if not q.empty():
@@ -208,6 +212,7 @@ def mainServer(q):
                     conn.send(tport.encode("utf-8"))
 
                 #Aloitetaan stringissä uusi yhteys
+                #conn.shutdown(socket.SHUT_RDWR)
                 conn.close()
                 thread.start_new_thread(Listen_Client,(url,data,tport,q,header,))
                 time.sleep(5)
