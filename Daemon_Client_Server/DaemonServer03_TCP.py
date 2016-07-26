@@ -30,6 +30,7 @@ def Listen_Client(url,data,tport,q,header):
                         s = socket.socket(af, socktype, proto)
                         s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
                     except socket.error as msg:
+                        print(msg)
                         s = None
                         continue
                     try:
@@ -37,6 +38,7 @@ def Listen_Client(url,data,tport,q,header):
                         s.bind(sa)
                         s.listen(1)
                     except socket.error as msg:
+                        print(msg)
                         s.close()
                         s = None
                         continue
