@@ -32,7 +32,7 @@ def Listen_Client(url,data,tport,q,header):
                         s = None
                         continue
                     try:
-                        print("Thread",sa)
+                        #print("Thread",sa)
                         s.bind(sa)
                         s.listen(1)
                     except socket.error as msg:
@@ -41,51 +41,51 @@ def Listen_Client(url,data,tport,q,header):
                         continue
                     break
                 if s is None:
-                    print('could not open socket')
+                    print("Thread *** could not open socket")
                     break
                 conn, addr = s.accept()
                 while True:
-                    print("-" * 60)
-                    print('Thread *** connected by', addr)
+                    #print("-" * 60)
+                    #print('Thread *** connected by', addr)
                     key = JWK(generate="RSA",public_exponent=29,size=1000)
                     public_key = key.export_public()
-                    print('Thread *** public key',public_key)
+                    #print('Thread *** public key',public_key)
                     conn.send(public_key.encode("utf-8"))
                     #otetaan viesti vastaan ja avataan
                     try:
                         conn.settimeout(20)
                         encrypted_signed_token = conn.recv(1024).decode("utf-8")
-                        print(encrypted_signed_token)
+                        #print(encrypted_signed_token)
                     except:
-                        print('Thread *** time out')
+                        #print('Thread *** time out')
                         break
                     E = JWE()
                     E.deserialize(encrypted_signed_token, key)
                     raw_payload = E.payload
                     string = raw_payload.decode("utf-8")
                     Payload = json.loads(string)
-                    print("Thread *** received payload:", Payload['exp'])
-                    
-                    #käydään REST app kysymässä Kumokselta
-                    mac = str(Payload['exp'])
-                    myResponse = requests.get(url + mac,header)
-                    print(url + mac,header)
-                    print("Thread *** REST:", myResponse.status_code)
-                    
+                    #print("Thread *** received payload:", Payload['exp'])
+                    while:
+                        try:
+                            #käydään REST app kysymässä Kumokselta
+                            mac = str(Payload['exp'])
+                            myResponse = requests.get(url + mac,header)
+                            break
+                        except:
+                            print("Thread *** REST failed")
+                    #print(url + mac,header)
+                    #print("Thread *** REST:", myResponse.status_code)
+                        
                     #tarkistus
                     if(myResponse.ok):
-                        print("Found!")
+                        #print("Thread *** Found!")
                         jData = json.loads(myResponse.content.decode("utf-8"))
-                        print("The response contains {0} properties".format(len(jData)))
+                        #print("The response contains {0} properties".format(len(jData)))
                     else:
-                        print("Not found")
+                        print("Thread *** Not found")
                         answer="Good try <3"
-                        conn.send(answer.encode("utf-8"))
-
-                            
-                        #SDN irrottaa kyseisen laitteen verkosta
-                            
-                            
+                        conn.send(answer.encode("utf-8"))  
+                        #SDN irrottaa kyseisen laitteen verkosta   
                         break
                 conn.close()
                 break
@@ -165,7 +165,7 @@ def mainServer(q):
         
         #datan tarkistus ja säikeen aloitus
         if data=="I am Client":
-            print("Main*** Right start message")
+            #print("Main*** Right start message")
 
             #lähetetään julkinen avain
             key = JWK(generate="RSA",public_exponent=29,size=1000)
@@ -179,47 +179,51 @@ def mainServer(q):
             E = JWE()
             E.deserialize(encrypted_signed_token, key)
             raw_payload = E.payload
-            print("*** raw payload:",raw_payload)
+            #print("*** raw payload:",raw_payload)
             string = raw_payload.decode("utf-8")
-            print("*** received str:", string)
+            #print("*** received str:", string)
             Payload = json.loads(string)
-            print("*** JSON:",Payload)
-            print("*** received payload:", Payload['exp'])
+            #print("*** JSON:",Payload)
+            #print("*** received payload:", Payload['exp'])
+            while:
+                try:
+                    #käydään kysymässä onko listoilla
+                    mac = str(Payload['exp'])
+                    myResponse = requests.get(url + mac,header)
+                    #print(url + mac,header)
+                    #print("REST:", myResponse.status_code)
+                    if(myResponse.ok):
+                        print("Main *** Found!")
+                        jData = json.loads(myResponse.content.decode("utf-8"))
+                        #print("The response contains {0} properties".format(len(jData)))
+                        
+                        #Kontrollerille viestiä, id configuroitavissa
+                        #{
+                        #ip: string,
+                        #valid: bool
+                        #}
+                        #POST /iot-service/:id
+                        
+                        #Haetaan "listalta"
+                        if not q.empty():
+                            free_port = q.get()
+                            conn.send(free_port.encode("utf-8"))
+                        else:
+                            tport = str(int(tport)+1)
+                            conn.send(tport.encode("utf-8"))
 
-            #käydään REST app kysymässä Kumokselta
-            mac = str(Payload['exp'])
-            myResponse = requests.get(url + mac,header)
-            print(url + mac,header)
-            print("REST:", myResponse.status_code)
-            if(myResponse.ok):
-                print("Found!")
-                jData = json.loads(myResponse.content.decode("utf-8"))
-                print("The response contains {0} properties".format(len(jData)))
-                
-                #Kontrollerille viestiä, id configuroitavissa
-                #{
-                #ip: string,
-                #valid: bool
-                #}
-                #POST /iot-service/:id
-                
-                #Haetaan "listalta"
-                if not q.empty():
-                    free_port = q.get()
-                    conn.send(free_port.encode("utf-8"))
-                else:
-                    tport = str(int(tport)+1)
-                    conn.send(tport.encode("utf-8"))
-
-                #Aloitetaan stringissä uusi yhteys
-                #conn.shutdown(socket.SHUT_RDWR)
-                conn.close()
-                thread.start_new_thread(Listen_Client,(url,data,tport,q,header,))
-                time.sleep(5)
-            else:
-                print("Not found")
-                answer="Good try <3"
-                conn.send(answer.encode("utf-8"))
+                        #Aloitetaan stringissä uusi yhteys
+                        #conn.shutdown(socket.SHUT_RDWR)
+                        conn.close()
+                        thread.start_new_thread(Listen_Client,(url,data,tport,q,header,))
+                        time.sleep(5)
+                    else:
+                        print("Not found")
+                        answer="Good try <3"
+                        conn.send(answer.encode("utf-8"))
+                    break
+                except:
+                    print("Main *** REST failed")    
         else:
             conn.close()
             print("*" * 60)
