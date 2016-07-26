@@ -86,6 +86,9 @@ def Listen_Client(url,data,tport,q,header):
                     #print("Thread *** Found!")
                     jData = json.loads(myResponse.content.decode("utf-8"))
                     #print("The response contains {0} properties".format(len(jData)))
+                elif myResponse.status_code=400:
+                    print("Baasbox is down or configuration file is wrong")
+                    break
                 else:
                     print("Thread *** Not found")
                     answer="Good try <3"
@@ -195,37 +198,40 @@ def mainServer(q):
                     myResponse = requests.get(url + mac,header)
                     #print(url + mac,header)
                     #print("REST:", myResponse.status_code)
-                    if(myResponse.ok):
-                        print("Main *** Found!")
-                        jData = json.loads(myResponse.content.decode("utf-8"))
-                        #print("The response contains {0} properties".format(len(jData)))
-                        
-                        #Kontrollerille viestiä, id configuroitavissa
-                        #{
-                        #ip: string,
-                        #valid: bool
-                        #}
-                        #POST /iot-service/:id
-                        
-                        #Haetaan "listalta"
-                        if not q.empty():
-                            free_port = q.get()
-                            conn.send(free_port.encode("utf-8"))
-                        else:
-                            tport = str(int(tport)+1)
-                            conn.send(tport.encode("utf-8"))
-
-                        #Aloitetaan stringissä uusi yhteys
-                        #conn.shutdown(socket.SHUT_RDWR)
-                        conn.close()
-                        thread.start_new_thread(Listen_Client,(url,data,tport,q,header,))
-                    else:
-                        print("Not found")
-                        answer="Good try <3"
-                        conn.send(answer.encode("utf-8"))
-                    break
                 except:
-                    print("Main *** REST failed")    
+                    print("Main *** REST failed")
+                if(myResponse.ok):
+                    print("Main *** Found!")
+                    jData = json.loads(myResponse.content.decode("utf-8"))
+                    #print("The response contains {0} properties".format(len(jData)))
+                    
+                    #Kontrollerille viestiä, id configuroitavissa
+                    #{
+                    #ip: string,
+                    #valid: bool
+                    #}
+                    #POST /iot-service/:id
+                        
+                    #Haetaan "listalta"
+                    if not q.empty():
+                        free_port = q.get()
+                        conn.send(free_port.encode("utf-8"))
+                    else:
+                        tport = str(int(tport)+1)
+                        conn.send(tport.encode("utf-8"))
+
+                    #Aloitetaan stringissä uusi yhteys
+                    #conn.shutdown(socket.SHUT_RDWR)
+                    conn.close()
+                    thread.start_new_thread(Listen_Client,(url,data,tport,q,header,))
+                elif myResponse.status_code=400:
+                    print("Baasbox is down or configuration file is wrong")
+                    break
+                else:
+                    print("Not found")
+                    answer="Good try <3"
+                    conn.send(answer.encode("utf-8"))
+                    break    
         else:
             conn.close()
             print("*" * 60)
