@@ -23,81 +23,81 @@ def Listen_Client(url,data,tport,q,header):
             HOST = '0.0.0.0'
             PORT = tport
             s = None
-            while True:
-                for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
-                    af, socktype, proto, canonname, sa = res
-                    try:
-                        s = socket.socket(af, socktype, proto)
-                        s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-                    except socket.error as msg:
-                        print(msg)
-                        s = None
-                        continue
-                    try:
-                        #print("Thread",sa)
-                        s.bind(sa)
-                        s.listen(1)
-                    except socket.error as msg:
-                        print(msg)
-                        s.close()
-                        s = None
-                        continue
-                    break
-                if s is None:
-                    print("Thread *** could not open socket")
-                    break
-                conn, addr = s.accept()
-                while True:
-                    #print("-" * 60)
-                    #print('Thread *** connected by', addr)
-                    key = JWK(generate="RSA",public_exponent=29,size=1000)
-                    public_key = key.export_public()
-                    #print('Thread *** public key',public_key)
-                    conn.send(public_key.encode("utf-8"))
-                    #otetaan viesti vastaan ja avataan
-                    try:
-                        conn.settimeout(20)
-                        encrypted_signed_token = conn.recv(1024).decode("utf-8")
-                        #print(encrypted_signed_token)
-                    except:
-                        #print('Thread *** time out')
-                        break
-                    E = JWE()
-                    E.deserialize(encrypted_signed_token, key)
-                    raw_payload = E.payload
-                    string = raw_payload.decode("utf-8")
-                    Payload = json.loads(string)
-                    #print("Thread *** received payload:", Payload['exp'])
-                    while True:
-                        try:
-                            #käydään REST app kysymässä Kumokselta
-                            mac = str(Payload['exp'])
-                            myResponse = requests.get(url + mac,header)
-                            break
-                        except:
-                            print("Thread *** REST failed")
-                    #print(url + mac,header)
-                    #print("Thread *** REST:", myResponse.status_code)
-                        
-                    #tarkistus
-                    if(myResponse.ok):
-                        #print("Thread *** Found!")
-                        jData = json.loads(myResponse.content.decode("utf-8"))
-                        #print("The response contains {0} properties".format(len(jData)))
-                    else:
-                        print("Thread *** Not found")
-                        answer="Good try <3"
-                        conn.send(answer.encode("utf-8"))  
-                        #SDN irrottaa kyseisen laitteen verkosta   
-                        break
-                conn.close()
+            for res in socket.getaddrinfo(HOST, PORT, socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_PASSIVE):
+                af, socktype, proto, canonname, sa = res
+                try:
+                    s = socket.socket(af, socktype, proto)
+                    s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+                except socket.error as msg:
+                    print(msg)
+                    s = None
+                    sys.exit(1)
+                    continue
+                try:
+                    #print("Thread",sa)
+                    s.bind(sa)
+                    s.listen(1)
+                except socket.error as msg:
+                    print(msg)
+                    s.close()
+                    s = None
+                    sys.exit(1)
+                    continue
                 break
-            break
-        q.put(tport)
+            if s is None:
+                print("Thread *** could not open socket")
+                break
+            conn, addr = s.accept()
+            while True:
+                #print("-" * 60)
+                #print('Thread *** connected by', addr)
+                key = JWK(generate="RSA",public_exponent=29,size=1000)
+                public_key = key.export_public()
+                #print('Thread *** public key',public_key)
+                conn.send(public_key.encode("utf-8"))
+                #otetaan viesti vastaan ja avataan
+                try:
+                    conn.settimeout(20)
+                    encrypted_signed_token = conn.recv(1024).decode("utf-8")
+                    #print(encrypted_signed_token)
+                except:
+                    print('Thread *** time out')
+                    q.put(tport)
+                    break
+                E = JWE()
+                E.deserialize(encrypted_signed_token, key)
+                raw_payload = E.payload
+                string = raw_payload.decode("utf-8")
+                Payload = json.loads(string)
+                #print("Thread *** received payload:", Payload['exp'])
+                while True:
+                    try:
+                        #käydään REST app kysymässä Kumokselta
+                        mac = str(Payload['exp'])
+                        myResponse = requests.get(url + mac,header)
+                        break
+                    except:
+                        print("Thread *** REST failed")
+                #print(url + mac,header)
+                #print("Thread *** REST:", myResponse.status_code)
+                        
+                #tarkistus
+                if(myResponse.ok):
+                    #print("Thread *** Found!")
+                    jData = json.loads(myResponse.content.decode("utf-8"))
+                    #print("The response contains {0} properties".format(len(jData)))
+                else:
+                    print("Thread *** Not found")
+                    answer="Good try <3"
+                    conn.send(answer.encode("utf-8"))
+                    q.put(tport)
+                    #SDN irrottaa kyseisen laitteen verkosta   
+                    break
+            conn.close()
+            #break
         print("Thread *** end")
         print("-" * 60)
     except:
-        q.put(tport)
         print("Thread *** Forced end")
         print("-" * 60)
 
