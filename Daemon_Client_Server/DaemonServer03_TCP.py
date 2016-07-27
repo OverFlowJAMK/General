@@ -29,7 +29,7 @@ def Listen_Client(url,data,tport,q,header):
                     s = socket.socket(af, socktype, proto)
                     s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
                 except socket.error as msg:
-                    print(msg)
+                    print("Thread *** error message:",msg)
                     s = None
                     sys.exit(1)
                     continue
@@ -38,7 +38,7 @@ def Listen_Client(url,data,tport,q,header):
                     s.bind(sa)
                     s.listen(1)
                 except socket.error as msg:
-                    print(msg)
+                    print("Thread *** error message:",msg)
                     s.close()
                     s = None
                     sys.exit(1)
@@ -151,7 +151,7 @@ def mainServer(q):
                 s = None
                 continue
             try:
-                print('Main ***',sa)
+                #print('Main ***',sa)
                 s.bind(sa)
                 s.listen(1)
             except socket.error as msg:
@@ -167,7 +167,13 @@ def mainServer(q):
 
         print("*" * 60)
         print('Main *** Connected by', addr)
-        data = conn.recv(1024).decode("utf-8")
+        try:
+            conn.settimeout(5)
+            data = conn.recv(1024).decode("utf-8")
+            conn.settimeout(None)
+        except:
+            print("Main *** timeout")
+            mainServer(q)
         print(data)
         
         #datan tarkistus ja säikeen aloitus
