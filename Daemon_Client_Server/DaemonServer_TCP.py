@@ -74,26 +74,20 @@ def Listen_Client(url,data,tport,q,header):
                     try:
                         #käydään REST app kysymässä Kumokselta
                         mac = str(Payload['exp'])
-                        #myResponse = requests.get(url + mac,header)
+                        myResponse = requests.get(url + mac,header)
                         break
-                    except:
-                        print("Thread *** REST failed")
+                    except Exception as msg:
+                        print("Thread *** REST failed",msg)
                 #print(url + mac,header)
                 #print("Thread *** REST:", myResponse.status_code)
                 
                 #tarkistus
-                #if(myResponse.ok):
-                if(mac=='mac=00-00-00-00-00-01'):
+                if(myResponse.ok):
+                #if(mac=='mac=00-00-00-00-00-01'):
                     #print("Thread *** Found!")
-                    jData = "mac=00-00-00-00-00-01"
-                    #jData = json.loads(myResponse.content.decode("utf-8"))
+                    #jData = "mac=00-00-00-00-00-01"
+                    jData = json.loads(myResponse.content.decode("utf-8"))
                     #print("The response contains {0} properties".format(len(jData)))
-                elif myResponse.status_code==400:
-                    print("Baasbox is down or configuration file is wrong")
-                    break
-                elif myResponse.status_code==506:
-                    print("Baasbox Server is down")
-                    break
                 else:
                     print("Thread *** Not found")
                     answer="Good try <3"
@@ -191,7 +185,7 @@ def mainServer(kierros,PORT,q):
         except:
             print("Main *** timeout")
             mainServer(kierros,PORT,q)
-        #print(data)
+        print(data)
         
         #datan tarkistus ja säikeen aloitus
         if data=="I am Client":
@@ -214,24 +208,24 @@ def mainServer(kierros,PORT,q):
             #print("*** received str:", string)
             Payload = json.loads(string)
             #print("*** JSON:",Payload)
-            #print("*** received payload:", Payload['exp'])
+            print("*** received payload:", Payload['exp'])
             while True:
                 try:
                     #käydään kysymässä onko listoilla
                     mac = str(Payload['exp'])
-                    #myResponse = requests.get(url + mac,header)
+                    myResponse = requests.get(url + mac,header)
                     #print(url + mac,header)
                     #print("REST:", myResponse.status_code)
                     break
                 except:
                     print("Main *** REST failed")
                     sys.exit(1)
-            #if(myResponse.ok):
-            if(mac=='mac=00-00-00-00-00-01'):
+            if(myResponse.ok):
+            #if(mac=='mac=00-00-00-00-00-01'):
                 print("Main *** Found!")
-                #jData = json.loads(myResponse.content.decode("utf-8"))
+                jData = json.loads(myResponse.content.decode("utf-8"))
                 #print("The response contains {0} properties".format(len(jData)))
-                jData = 'mac=00-00-00-00-00-01'
+                #jData = 'mac=00-00-00-00-00-01'
                 #Kontrollerille viestiä, id configuroitavissa
                 #{
                 #ip: string,
@@ -251,14 +245,8 @@ def mainServer(kierros,PORT,q):
                 #conn.shutdown(socket.SHUT_RDWR)
                 conn.close()
                 thread.start_new_thread(Listen_Client,(url,data,tport,q,header,))
-            elif myResponse.status_code==400:
-                print("Baasbox is down or configuration file is wrong")
-                break
-            elif myResponse.status_code==506:
-                print("Baasbox Server is down")
-                break
             else:
-                print("Not found")
+                print("Not found",myResponse.status_code)
                 answer="Good try <3"
                 conn.send(answer.encode("utf-8"))
                 break
