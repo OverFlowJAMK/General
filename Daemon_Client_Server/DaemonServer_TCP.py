@@ -15,6 +15,13 @@ from jwcrypto.jwe import JWE
 from jwcrypto.jwk import JWK
 from jwcrypto.jws import JWS
 from jwcrypto.jwt import JWT
+session= requests.Session()
+
+#Tarkistetaan rest
+def Check_rest(url,mac,header):
+    myResponse = session.get(url=url+mac, headers=header)
+    #print('*** ',myResponse.status_code)
+    return myResponse.status_code
 
 #käynnistettään tarkistuskierros uusiksi säikeessä
 def Listen_Client(url,data,tport,q,header):
@@ -29,7 +36,7 @@ def Listen_Client(url,data,tport,q,header):
                     s = socket.socket(af, socktype, proto)
                     s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
                 except socket.error as msg:
-                    print("Thread *** error message:",msg)
+                    #print(PORT,"Thread *** error message:",msg)
                     s = None
                     sys.exit(1)
                     continue
@@ -38,14 +45,14 @@ def Listen_Client(url,data,tport,q,header):
                     s.bind(sa)
                     s.listen(1)
                 except socket.error as msg:
-                    print("Thread *** error message:",msg)
+                    print(PORT,"Thread *** error message:",msg)
                     s.close()
                     s = None
                     sys.exit(1)
                     continue
                 break
             if s is None:
-                print("Thread *** could not open socket")
+                print(PORT,"Thread *** could not open socket")
                 break
             conn, addr = s.accept()
             while True:
@@ -61,11 +68,17 @@ def Listen_Client(url,data,tport,q,header):
                     encrypted_signed_token = conn.recv(1024).decode("utf-8")
                     #print(encrypted_signed_token)
                 except:
-                    print('Thread *** time out')
+                    print(PORT,'Thread *** time out')
                     q.put(tport)
                     break
-                E = JWE()
-                E.deserialize(encrypted_signed_token, key)
+                try:
+                    E = JWE()
+                    E.deserialize(encrypted_signed_token, key)
+                except Exception as msg:
+                    print(PORT,'Thread *** Wrong key',encrypted_signed_token)
+                    print(PORT,'Thread *** Wrong key',public_key)
+                    print(PORT,'Thread *** Wrong key',msg)
+                    break
                 raw_payload = E.payload
                 string = raw_payload.decode("utf-8")
                 Payload = json.loads(string)
@@ -74,19 +87,20 @@ def Listen_Client(url,data,tport,q,header):
                     try:
                         #käydään REST app kysymässä Kumokselta
                         mac = str(Payload['exp'])
-                        myResponse = requests.get(url + mac,header)
+                        #myResponse = requests.get(url + mac,header)
+                        myResponse = Check_rest(url,mac,header)
                         break
                     except Exception as msg:
-                        print("Thread *** REST failed",msg)
+                        print(PORT,"Thread *** REST failed",msg)
                 #print(url + mac,header)
                 #print("Thread *** REST:", myResponse.status_code)
                 
                 #tarkistus
-                if(myResponse.ok):
+                if(myResponse == 200):
                 #if(mac=='mac=00-00-00-00-00-01'):
                     #print("Thread *** Found!")
-                    #jData = "mac=00-00-00-00-00-01"
-                    jData = json.loads(myResponse.content.decode("utf-8"))
+                    jData = "mac=00-00-00-00-00-01"
+                    #jData = json.loads(myResponse.content.decode("utf-8"))
                     #print("The response contains {0} properties".format(len(jData)))
                 else:
                     print("Thread *** Not found")
@@ -97,10 +111,10 @@ def Listen_Client(url,data,tport,q,header):
                     break
             conn.close()
             #break
-        print("Thread *** end")
+        print(PORT,"Thread *** end")
         print("-" * 60)
     except Exception as msg:
-        print("Thread *** Forced end",msg)
+        print(PORT,"Thread *** Forced end",msg)
         print("-" * 60)
 
 def filu_checker():
@@ -176,8 +190,8 @@ def mainServer(kierros,PORT,q):
             #sys.exit(1)
         conn, addr = s.accept()
 
-        print("*" * 60)
-        print('Main *** Connected by', addr)
+        #print("*" * 60)
+        #print('Main *** Connected by', addr)
         try:
             #conn.settimeout(5)
             data = conn.recv(1024).decode("utf-8")
@@ -185,7 +199,7 @@ def mainServer(kierros,PORT,q):
         except:
             print("Main *** timeout")
             mainServer(kierros,PORT,q)
-        print(data)
+        #print(data)
         
         #datan tarkistus ja säikeen aloitus
         if data=="I am Client":
@@ -199,33 +213,44 @@ def mainServer(kierros,PORT,q):
             #otetaan viesti vastaan ja avataan
             encrypted_signed_token = conn.recv(1024).decode("utf-8")
             #print(encrypted_signed_token)
-
-            E = JWE()
-            E.deserialize(encrypted_signed_token, key)
-            raw_payload = E.payload
-            #print("*** raw payload:",raw_payload)
-            string = raw_payload.decode("utf-8")
+            try:
+                E = JWE()
+                E.deserialize(encrypted_signed_token, key)
+                raw_payload = E.payload
+                #print("*** raw payload:",raw_payload)
+                string = raw_payload.decode("utf-8")
+            except Exception as msg:
+                print('Main *** Wrong key',encrypted_signed_token)
+                print('Main *** Wrong key',public_key)
+                print('Main *** Wrong key',msg)
+                break
             #print("*** received str:", string)
             Payload = json.loads(string)
             #print("*** JSON:",Payload)
-            print("*** received payload:", Payload['exp'])
+            #print("*** received payload:", Payload['exp'])
             while True:
                 try:
                     #käydään kysymässä onko listoilla
                     mac = str(Payload['exp'])
-                    myResponse = requests.get(url + mac,header)
+
+
+                    #Tähän kohti kysymys lähetetään request session ohjelmalle
+                    myResponse = Check_rest(url,mac,header)
+                    #myResponse = requests.get(url + mac,header)
                     #print(url + mac,header)
                     #print("REST:", myResponse.status_code)
+
+
                     break
-                except:
-                    print("Main *** REST failed")
+                except Exception as msg:
+                    print("Main *** REST failed",msg)
                     sys.exit(1)
-            if(myResponse.ok):
+            if(myResponse == 200):
             #if(mac=='mac=00-00-00-00-00-01'):
-                print("Main *** Found!")
-                jData = json.loads(myResponse.content.decode("utf-8"))
+                #print("Main *** Found!")
+                #jData = json.loads(myResponse.content.decode("utf-8"))
                 #print("The response contains {0} properties".format(len(jData)))
-                #jData = 'mac=00-00-00-00-00-01'
+                jData = 'mac=00-00-00-00-00-01'
                 #Kontrollerille viestiä, id configuroitavissa
                 #{
                 #ip: string,
