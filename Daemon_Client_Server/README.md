@@ -1,6 +1,6 @@
-<h1>Server</h1>
+<h1>Device requirement</h1>
 
-Laitevaatimus:
+Server:
 
 ||version|
 |---|---|
@@ -17,9 +17,7 @@ Laitevaatimus:
 | codecs ||
 | _thread ||
 
-Client
-
-Laitevaatimus:
+Client:
 
 ||version|
 |---|---|
