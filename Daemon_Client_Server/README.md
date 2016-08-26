@@ -1,6 +1,6 @@
 <h1>Device requirement</h1>
 
-Server:
+<h2>Server:</h2>
 
 ||version|
 |---|---|
@@ -17,7 +17,7 @@ Server:
 | codecs ||
 | _thread ||
 
-Client:
+<h2>Client:</h2>
 
 ||version|
 |---|---|
