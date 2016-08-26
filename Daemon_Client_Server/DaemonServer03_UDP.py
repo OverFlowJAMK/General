@@ -84,41 +84,41 @@ def Listen_Client(url,data,tport,q,header):
         print("Thread *** Forced end")
 
 def ServerMain(q,tport):
+    filu = 'serverdaemon.ini'
+    HOST = '0.0.0.0'    #change to None if wanted listen from IPv6 address
     try:
-        filu = 'serverdaemon.ini'
-        HOST = '0.0.0.0'    #change to None if wanted listen from IPv6 address
-        try:
-            fp = open(filu, 'r+')
-            Config.readfp(fp)
-            url = Config.get('REST','url')
-            header = Config.get('REST','header')
-            if tport==0:
-                tport = int(Config.get('DAEMON','port'))
-            PORT = int(Config.get('DAEMON','port'))
-            fp.close()
-        except:
-            url = input('anna url:')
-            header = input('anna header:')
-            port = input('anna port:')
-            cfgfile = open(filu,'w')
-            try:
-                Config.add_section('REST')
-                Config.add_section('DAEMON')
-                print("*** Created sections")
-            except:
-                print('*** sections already exists')
-            Config.set('REST','url',url)
-            Config.set('REST','header', header)
-            Config.set('DAEMON','port',port)
-            Config.write(cfgfile)
-            cfgfile.close()
+        fp = open(filu, 'r+')
+        Config.readfp(fp)
+        url = Config.get('REST','url')
+        header = Config.get('REST','header')
+        if tport==0:
             tport = int(Config.get('DAEMON','port'))
-            url = Config.get('REST','url')
-            header =  Config.get('REST','header')
-            PORT = int(Config.get('DAEMON','port'))
-            print("*** Created information.")
-        header = ast.literal_eval(header)
-
+        PORT = int(Config.get('DAEMON','port'))
+        fp.close()
+    except:
+        url = input('anna url:')
+        header = input('anna header:')
+        port = input('anna port:')
+        cfgfile = open(filu,'w')
+        try:
+            Config.add_section('REST')
+            Config.add_section('DAEMON')
+            print("*** Created sections")
+        except:
+            print('*** sections already exists')
+        Config.set('REST','url',url)
+        Config.set('REST','header', header)
+        Config.set('DAEMON','port',port)
+        Config.write(cfgfile)
+        cfgfile.close()
+        tport = int(Config.get('DAEMON','port'))
+        url = Config.get('REST','url')
+        header =  Config.get('REST','header')
+        PORT = int(Config.get('DAEMON','port'))
+        print("*** Created information.")
+    header = ast.literal_eval(header)
+    try:
+        conn = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         while True:
             print("*** Main ***")
             #print("*" * 60)
@@ -127,7 +127,7 @@ def ServerMain(q,tport):
                 conn.bind((HOST, PORT))
             except:
                 print("Main *** Ei onnistunut")
-                ServerMain()
+                ServerMain(q,tport)
             info = conn.recvfrom(1024)
             #print(info)
             data = info[0].decode("utf-8")
