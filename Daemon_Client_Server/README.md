@@ -1,6 +1,8 @@
-<h1>Device requirement</h1>
+<h1>ServerClientDaemon</h1>
 
-<h2>Server:</h2>
+<h2>Device requirement</h2>
+
+<h3>Server:</h3>
 
 ||version|
 |---|---|
@@ -17,7 +19,7 @@
 | codecs ||
 | _thread ||
 
-<h2>Client:</h2>
+<h3>Client:</h3>
 
 ||version|
 |---|---|
@@ -28,3 +30,19 @@
 | websocket-client | 0.37.0 |
 | JWCrypto ||
 | codecs ||
+
+<h2>Installation</h2>
+* Download Server or Client zip file from the official site depending witch one your machine will be
+* Unzip
+* Run the start.sh script
+
+<h2>Setting Server computer</h2>
+You can easily change your Server's settings by changing information in serverdaemon.ini file.
+
+* url is for baasbox address
+* header is for ???
+* port is the main port of server, which is start number of ports
+
+<h2>Setting Client machine</h2>
+
+*Check your computer's ip address and write it
