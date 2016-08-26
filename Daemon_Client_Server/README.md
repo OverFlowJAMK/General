@@ -1,6 +1,6 @@
 Server
 
-Laitevaatimus:
+* Laitevaatimus:
 Linux Ubuntu 16.04
 Python 3.5.2
 jsonschema 2.7.0
