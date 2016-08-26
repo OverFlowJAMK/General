@@ -16,4 +16,11 @@ Laitevaatimus:
 
 Client
 
-Laitevaatimus
+Laitevaatimus:
+* Python 3.5.2
+* jsonschema 2.7.0
+* cryptography 1.4
+* configparser 3.5.0
+* websocket-client 0.37.0
+* JWCrypto
+* codecs
