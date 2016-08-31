@@ -34,7 +34,8 @@
 <h2>Installation</h2>
 * Download Server or Client zip file from the official site depending witch one your machine will be
 * Unzip
-* Run the start.sh script
+* Run the requirements.txt script
+* Run the server.py/client.py script with python 3.5
 
 <h2>Setting Server computer</h2>
 You can easily change your Server's settings by changing information in serverdaemon.ini file.
