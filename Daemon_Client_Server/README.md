@@ -38,12 +38,21 @@
 * Run the server.py/client.py script with python 3.5
 
 <h2>Setting Server computer</h2>
-You can easily change your Server's settings by changing information in serverdaemon.ini file.
+You can easily change your Server's settings by changing information in server.ini file.
 
 * url is for baasbox address
-* header is for ???
+* header is baasbox's header
 * port is the main port of server, which is start number of ports
 
 <h2>Setting Client machine</h2>
 
-*Check your computer's ip address and write it
+<h3>Client.ini</h3>
+
+* Check Server computer's ip address and write it down to "address"
+* Port is the main port of server, which is start number of ports
+* under KaMu write right mac address
+
+<h3>ServerAddress.ini</h3>
+
+* Check Server computer's ip address and write it down to "address"
+* Port is the main port of server, which is start number of ports
